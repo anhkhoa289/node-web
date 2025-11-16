@@ -1,14 +1,20 @@
 {
   "name": "node-web",
   "version": "1.0.0",
+  "description": "Node.js Express web application",
   "main": "index.js",
   "repository": "http://local_proxy@127.0.0.1:32592/git/anhkhoa289/node-web",
   "author": "Claude <noreply@anthropic.com>",
   "license": "MIT",
+  "keywords": ["nodejs", "express", "web"],
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }

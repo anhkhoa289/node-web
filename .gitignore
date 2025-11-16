@@ -1,3 +1,14 @@
 node_modules/
+npm-debug.log
 .env
+.DS_Store
+*.swp
+*.swo
 *.log
+.vscode/
+.idea/
+
+# Buildpack cache
+.cache/
+*.tgz
+pack-cache/
