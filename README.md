@@ -6,7 +6,7 @@
 
 Dự án này bao gồm:
 - Ứng dụng Node.js Express cơ bản
-- Dockerfile để containerize ứng dụng
+- Hỗ trợ build với Cloud Native Buildpacks (khuyến nghị) hoặc Dockerfile
 - Helm Chart để triển khai trên Kubernetes
 
 ## Cấu trúc dự án
@@ -15,9 +15,15 @@ Dự án này bao gồm:
 node-web/
 ├── index.js                 # Entry point của ứng dụng
 ├── package.json            # Dependencies và scripts
-├── Dockerfile              # Docker image definition
+├── Procfile                # Process definition cho buildpack
+├── project.toml            # Buildpack configuration
+├── .npmrc                  # NPM configuration
+├── Dockerfile              # Docker image definition (backup option)
 ├── .dockerignore          # Docker ignore patterns
 ├── .gitignore             # Git ignore patterns
+├── scripts/
+│   ├── build-with-buildpack.sh   # Build script với Cloud Native Buildpacks
+│   └── build-and-push.sh         # Build và push image
 └── helm/
     └── node-web/          # Helm chart
         ├── Chart.yaml     # Chart metadata
@@ -35,9 +41,25 @@ node-web/
 ## Yêu cầu
 
 - Node.js 18+ (cho local development)
-- Docker (để build image)
+- Docker (để build và run image)
+- **Pack CLI** (để build với Cloud Native Buildpacks - khuyến nghị)
 - Kubernetes cluster (để deploy)
 - Helm 3.0+ (để deploy với Helm)
+
+### Cài đặt Pack CLI
+
+```bash
+# macOS
+brew install buildpacks/tap/pack
+
+# Linux/WSL
+curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.32.1/pack-v0.32.1-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack
+
+# Windows (Chocolatey)
+choco install pack
+
+# Hoặc tải từ: https://github.com/buildpacks/pack/releases
+```
 
 ## Development
 
@@ -66,18 +88,63 @@ npm run dev
 - `GET /` - Welcome message
 - `GET /health` - Health check endpoint
 
-## Docker
+## Build Docker Image
 
-### Build Docker image
+### Phương pháp 1: Cloud Native Buildpacks (Khuyến nghị)
+
+Buildpacks tự động phát hiện và build ứng dụng Node.js mà không cần Dockerfile, áp dụng best practices và tối ưu hóa image.
+
+#### Build với script
 
 ```bash
+# Build image cơ bản
+./scripts/build-with-buildpack.sh node-web 1.0.0
+
+# Build và push lên registry
+./scripts/build-and-push.sh node-web 1.0.0 docker.io/youruser
+
+# Hoặc dùng environment variables
+REGISTRY=docker.io/youruser IMAGE_TAG=1.0.0 ./scripts/build-and-push.sh
+```
+
+#### Build thủ công với pack CLI
+
+```bash
+# Build với Paketo Node.js buildpack
+pack build node-web:1.0.0 \
+  --builder paketobuildpacks/builder:base \
+  --buildpack paketo-buildpacks/nodejs \
+  --env BP_NODE_VERSION="18.*"
+
+# Build với custom builder
+pack build node-web:1.0.0 \
+  --builder paketobuildpacks/builder:base \
+  --descriptor project.toml
+```
+
+#### Lợi ích của Buildpacks:
+- Không cần viết Dockerfile
+- Tự động áp dụng best practices
+- Tự động cập nhật base image và dependencies
+- Tối ưu hóa layer caching
+- Security scanning tích hợp
+- Reproducible builds
+
+### Phương pháp 2: Dockerfile truyền thống
+
+```bash
+# Build với Dockerfile
 docker build -t node-web:1.0.0 .
 ```
 
 ### Run Docker container
 
 ```bash
+# Run với port mapping
 docker run -p 3000:3000 node-web:1.0.0
+
+# Run với environment variables
+docker run -p 3000:3000 -e NODE_ENV=production node-web:1.0.0
 ```
 
 ## Kubernetes Deployment với Helm
@@ -86,20 +153,26 @@ docker run -p 3000:3000 node-web:1.0.0
 
 1. Build và push Docker image lên registry của bạn:
 
+**Với Cloud Native Buildpacks (khuyến nghị):**
 ```bash
-docker build -t your-registry/node-web:1.0.0 .
-docker push your-registry/node-web:1.0.0
+./scripts/build-and-push.sh node-web 1.0.0 docker.io/youruser
 ```
 
-2. Cập nhật `helm/node-web/values.yaml` với image repository:
-
-```yaml
-image:
-  repository: your-registry/node-web
-  tag: "1.0.0"
+**Với Dockerfile:**
+```bash
+docker build -t docker.io/youruser/node-web:1.0.0 .
+docker push docker.io/youruser/node-web:1.0.0
 ```
 
-3. Deploy với Helm:
+2. Deploy với Helm (image repository sẽ được override từ command line):
+
+```bash
+helm install my-node-web ./helm/node-web \
+  --set image.repository=docker.io/youruser/node-web \
+  --set image.tag=1.0.0
+```
+
+Hoặc cập nhật `helm/node-web/values.yaml` và deploy:
 
 ```bash
 helm install my-node-web ./helm/node-web

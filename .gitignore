@@ -6,3 +6,8 @@ npm-debug.log
 *.swo
 .vscode/
 .idea/
+
+# Buildpack cache
+.cache/
+*.tgz
+pack-cache/

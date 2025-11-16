@@ -1,0 +1,22 @@
+# Cloud Native Buildpacks configuration
+[_]
+schema-version = "0.2"
+
+# Buildpacks to use (Paketo Node.js buildpack)
+[[io.buildpacks.group]]
+id = "paketo-buildpacks/nodejs"
+
+# Build-time environment variables
+[build]
+  [[build.env]]
+  name = "BP_NODE_VERSION"
+  value = "18.*"
+
+  [[build.env]]
+  name = "BP_KEEP_FILES"
+  value = "package.json:package-lock.json"
+
+# Runtime environment variables
+[[io.buildpacks.build.env]]
+name = "NODE_ENV"
+value = "production"

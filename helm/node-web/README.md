@@ -6,10 +6,36 @@ Helm chart để triển khai ứng dụng Node.js Express trên Kubernetes.
 
 - Kubernetes 1.19+
 - Helm 3.0+
+- Docker image được build bằng Cloud Native Buildpacks hoặc Dockerfile
+
+## Build Image
+
+Trước khi deploy, bạn cần build và push Docker image. Khuyến nghị sử dụng Cloud Native Buildpacks:
+
+```bash
+# Build với buildpack script
+./scripts/build-and-push.sh node-web 1.0.0 docker.io/youruser
+
+# Hoặc build với pack CLI
+pack build docker.io/youruser/node-web:1.0.0 \
+  --builder paketobuildpacks/builder:base \
+  --buildpack paketo-buildpacks/nodejs
+
+# Push image
+docker push docker.io/youruser/node-web:1.0.0
+```
 
 ## Cài đặt
 
-### Cài đặt chart
+### Cài đặt chart với image từ registry
+
+```bash
+helm install my-node-web ./helm/node-web \
+  --set image.repository=docker.io/youruser/node-web \
+  --set image.tag=1.0.0
+```
+
+### Cài đặt chart (nếu đã cập nhật values.yaml)
 
 ```bash
 helm install my-node-web ./helm/node-web
