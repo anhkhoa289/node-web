@@ -3,7 +3,8 @@ name: Build and Push Docker Image
 on:
   push:
     tags:
-      - 'v*.*.*-chart'
+      - 'v*.*.*'
+      - '!v*.*.*-chart'  # Exclude tags ending with -chart
 
 env:
   REGISTRY: ghcr.io
@@ -23,7 +24,7 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          # Extract version from tag (e.g., v1.0.0-chart -> 1.0.0-chart)
+          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
@@ -45,7 +46,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ steps.version.outputs.version }}
-            type=raw,value=latest-chart
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

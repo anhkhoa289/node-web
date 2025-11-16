@@ -3,8 +3,7 @@ name: Build and Push Helm Chart
 on:
   push:
     tags:
-      - 'v*.*.*'
-      - '!v*.*.*-chart'  # Exclude tags ending with -chart
+      - 'v*.*.*-chart'
 
 env:
   REGISTRY: ghcr.io
@@ -24,8 +23,10 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          # Extract version from tag (e.g., v1.0.0-chart -> 1.0.0)
           VERSION=${GITHUB_REF#refs/tags/v}
+          # Remove -chart suffix
+          VERSION=${VERSION%-chart}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Chart Version: $VERSION"
 
