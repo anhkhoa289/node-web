@@ -1,0 +1,14 @@
+{
+  "name": "node-web",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "http://local_proxy@127.0.0.1:32592/git/anhkhoa289/node-web",
+  "author": "Claude <noreply@anthropic.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
