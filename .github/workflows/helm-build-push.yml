@@ -1,0 +1,78 @@
+name: Build and Push Helm Chart
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '!v*.*.*-chart'  # Exclude tags ending with -chart
+
+env:
+  REGISTRY: ghcr.io
+  CHART_PATH: helm/node-web
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Chart Version: $VERSION"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Update Chart version
+        run: |
+          # Update Chart.yaml with the version from the tag
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" ${{ env.CHART_PATH }}/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" ${{ env.CHART_PATH }}/Chart.yaml
+          echo "Updated Chart.yaml:"
+          cat ${{ env.CHART_PATH }}/Chart.yaml
+
+      - name: Package Helm chart
+        run: |
+          helm package ${{ env.CHART_PATH }} --version ${{ steps.version.outputs.version }}
+          echo "Chart packaged successfully"
+          ls -la *.tgz
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} --username ${{ github.actor }} --password-stdin
+
+      - name: Push Helm chart to OCI registry
+        run: |
+          CHART_NAME=$(yq eval '.name' ${{ env.CHART_PATH }}/Chart.yaml)
+          CHART_FILE="${CHART_NAME}-${{ steps.version.outputs.version }}.tgz"
+
+          # Push to GitHub Container Registry as OCI artifact
+          helm push "$CHART_FILE" oci://${{ env.REGISTRY }}/${{ github.repository_owner }}
+
+          echo "Helm chart pushed successfully!"
+          echo "Chart: oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/${CHART_NAME}:${{ steps.version.outputs.version }}"
+
+      - name: Output chart details
+        run: |
+          CHART_NAME=$(yq eval '.name' ${{ env.CHART_PATH }}/Chart.yaml)
+          echo "### Helm Chart Published :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Chart Name:** $CHART_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/$CHART_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Install command:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "helm install my-release oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/$CHART_NAME --version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
