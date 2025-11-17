@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  CHART_PATH: helm/node-web
+  CHART_PATH: ${{ github.repository }}/chart
 
 jobs:
   build-and-push:
