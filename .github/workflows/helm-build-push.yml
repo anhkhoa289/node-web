@@ -7,7 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  CHART_PATH: ${{ github.repository }}/chart
+  CHART_PATH: helm/node-web
+  OCI_PATH: ${{ github.repository }}/chart
 
 jobs:
   build-and-push:
@@ -59,10 +60,10 @@ jobs:
           CHART_FILE="${CHART_NAME}-${{ steps.version.outputs.version }}.tgz"
 
           # Push to GitHub Container Registry as OCI artifact
-          helm push "$CHART_FILE" oci://${{ env.REGISTRY }}/${{ github.repository_owner }}
+          helm push "$CHART_FILE" oci://${{ env.REGISTRY }}/${{ env.OCI_PATH }}
 
           echo "Helm chart pushed successfully!"
-          echo "Chart: oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/${CHART_NAME}:${{ steps.version.outputs.version }}"
+          echo "Chart: oci://${{ env.REGISTRY }}/${{ env.OCI_PATH }}:${{ steps.version.outputs.version }}"
 
       - name: Output chart details
         run: |
@@ -71,9 +72,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Chart Name:** $CHART_NAME" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry:** oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/$CHART_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** oci://${{ env.REGISTRY }}/${{ env.OCI_PATH }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Install command:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "helm install my-release oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/$CHART_NAME --version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "helm install my-release oci://${{ env.REGISTRY }}/${{ env.OCI_PATH }} --version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
